@@ -1,4 +1,4 @@
-# Ofelia - a job scheduler [![GitHub version](https://badge.fury.io/gh/mcuadros%2Fofelia.svg)](https://github.com/mcuadros/ofelia/releases) [![codecov.io](http://codecov.io/github/mcuadros/ofelia/coverage.svg?branch=master)](http://codecov.io/github/mcuadros/ofelia?branch=master) [![Build Status](https://travis-ci.org/mcuadros/ofelia.svg)](https://travis-ci.org/mcuadros/ofelia)
+# Ofelia - a job scheduler [![GitHub version](https://badge.fury.io/gh/mcuadros%2Fofelia.svg)](https://github.com/vigasin/ofelia/releases) [![codecov.io](http://codecov.io/github/vigasin/ofelia/coverage.svg?branch=master)](http://codecov.io/github/vigasin/ofelia?branch=master) [![Build Status](https://travis-ci.org/vigasin/ofelia.svg)](https://travis-ci.org/vigasin/ofelia)
 
 <img src="https://weirdspace.dk/FranciscoIbanez/Graphics/Ofelia.gif" align="right" width="180px" height="300px" vspace="20" />
 
@@ -78,12 +78,12 @@ command =  touch /tmp/example
 The easiest way to deploy **ofelia** is using *Docker*.
 
 ```sh
-docker run -it -v /etc/ofelia:/etc/ofelia mcuadros/ofelia:latest
+docker run -it -v /etc/ofelia:/etc/ofelia vigasin/ofelia:latest
 ```
 
 Don't forget to place your `config.ini` at your host machine.
 
-If don't want to run **ofelia** using our *Docker* image you can download a binary from [releases](https://github.com/mcuadros/ofelia/releases) page.
+If don't want to run **ofelia** using our *Docker* image you can download a binary from [releases](https://github.com/vigasin/ofelia/releases) page.
 
 
 

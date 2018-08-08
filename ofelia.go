@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mcuadros/ofelia/cli"
+	"github.com/vigasin/ofelia/cli"
 
 	"github.com/jessevdk/go-flags"
 )

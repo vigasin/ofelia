@@ -2,9 +2,9 @@
 PROJECT = ofelia
 COMMANDS = ofelia
 DEPENDENCIES = golang.org/x/tools/cmd/cover
-PACKAGES = github.com/mcuadros/ofelia/core \
-	github.com/mcuadros/ofelia/middlewares \
-	github.com/mcuadros/ofelia/cli
+PACKAGES = github.com/vigasin/ofelia/core \
+	github.com/vigasin/ofelia/middlewares \
+	github.com/vigasin/ofelia/cli
 
 # Environment
 BASE_PATH := $(shell pwd)

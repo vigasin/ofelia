@@ -1,7 +1,7 @@
 FROM golang:1.10.0 AS builder
 
-WORKDIR ${GOPATH}/src/github.com/mcuadros/ofelia
-COPY . ${GOPATH}/src/github.com/mcuadros/ofelia
+WORKDIR ${GOPATH}/src/github.com/vigasin/ofelia
+COPY . ${GOPATH}/src/github.com/vigasin/ofelia
 
 ENV CGO_ENABLED 0
 ENV GOOS linux

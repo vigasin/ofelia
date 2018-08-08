@@ -2,8 +2,8 @@ package cli
 
 import (
 	"github.com/fsouza/go-dockerclient"
-	"github.com/mcuadros/ofelia/core"
-	"github.com/mcuadros/ofelia/middlewares"
+	"github.com/vigasin/ofelia/core"
+	"github.com/vigasin/ofelia/middlewares"
 	"github.com/op/go-logging"
 
 	"github.com/mcuadros/go-defaults"
