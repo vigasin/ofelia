@@ -6,7 +6,8 @@ import (
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/gobs/args"
-)
+	"strings"
+	)
 
 var dockercfg *docker.AuthConfigurations
 
@@ -23,6 +24,7 @@ type RunJob struct {
 	Image     string
 	Network   string
 	Container string
+	Volumes   string
 }
 
 func NewRunJob(c *docker.Client) *RunJob {
@@ -72,6 +74,21 @@ func (j *RunJob) pullImage() error {
 }
 
 func (j *RunJob) buildContainer() (*docker.Container, error) {
+	volumeList := strings.Split(j.Volumes, ";")
+
+	var mounts []docker.HostMount
+
+	for _, volume := range volumeList {
+		volumeSplit := strings.Split(volume, ":")
+
+		mount := docker.HostMount{
+			Type: "bind",
+			Source: volumeSplit[0],
+			Target:volumeSplit[1],
+		}
+		mounts = append(mounts, mount)
+	}
+
 	c, err := j.Client.CreateContainer(docker.CreateContainerOptions{
 		Config: &docker.Config{
 			Image:        j.Image,
@@ -83,6 +100,9 @@ func (j *RunJob) buildContainer() (*docker.Container, error) {
 			User:         j.User,
 		},
 		NetworkingConfig: &docker.NetworkingConfig{},
+		HostConfig:&docker.HostConfig{
+			Mounts: mounts,
+		},
 	})
 
 	if err != nil {
