@@ -9,6 +9,7 @@ type BareJob struct {
 	Schedule string
 	Name     string
 	Command  string
+	RunOnStart bool
 
 	middlewareContainer
 	running int32
@@ -22,6 +23,10 @@ func (j *BareJob) GetName() string {
 
 func (j *BareJob) GetSchedule() string {
 	return j.Schedule
+}
+
+func (j *BareJob) GetRunOnStart() bool {
+	return j.RunOnStart
 }
 
 func (j *BareJob) GetCommand() string {

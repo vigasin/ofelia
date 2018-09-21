@@ -24,6 +24,7 @@ var (
 type Job interface {
 	GetName() string
 	GetSchedule() string
+	GetRunOnStart() bool
 	GetCommand() string
 	Middlewares() []Middleware
 	Use(...Middleware)
