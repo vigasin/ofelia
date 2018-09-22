@@ -7,9 +7,72 @@ import (
 	"github.com/fsouza/go-dockerclient"
 	"github.com/gobs/args"
 	"strings"
-	)
+	"os"
+	"path"
+		"io/ioutil"
+	"encoding/json"
+	"os/exec"
+	"log"
+	"io"
+)
 
 var dockercfg *docker.AuthConfigurations
+
+func dockerAuth(repository string) (docker.AuthConfiguration, error){
+
+	configPath := path.Join(os.Getenv("HOME"), ".docker", "config.json")
+	configFile, err := os.Open(configPath)
+
+	if err != nil {
+		return docker.AuthConfiguration{}, err
+	}
+
+	byteData, _ := ioutil.ReadAll(configFile)
+
+	confsWrapper := struct {
+		CredsStore string `json:"credsStore"`
+	}{}
+	if err := json.Unmarshal(byteData, &confsWrapper); err == nil {
+		fmt.Println(confsWrapper.CredsStore)
+	}
+
+	command := fmt.Sprintf("docker-credential-%s", confsWrapper.CredsStore)
+
+	cmd := exec.Command(command, "get")
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	go func() {
+		defer stdin.Close()
+		io.WriteString(stdin, repository)
+	}()
+
+	out, err := cmd.Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	authWrapper := struct {
+		ServerURL string
+		Username string
+		Secret string
+	}{}
+
+	if err := json.Unmarshal(out, &authWrapper); err == nil {
+		fmt.Println(authWrapper.Username)
+	}
+
+	result := docker.AuthConfiguration{
+		ServerAddress:authWrapper.ServerURL,
+		Username:authWrapper.Username,
+		Password:authWrapper.Secret,
+		Email:"no@email.no",
+	}
+
+	return result, nil
+}
 
 func init() {
 	dockercfg, _ = docker.NewAuthConfigurationsFromDockerCfg()

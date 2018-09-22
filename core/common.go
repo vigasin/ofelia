@@ -240,11 +240,15 @@ func buildPullOptions(image string) (docker.PullImageOptions, docker.AuthConfigu
 }
 
 func buildAuthConfiguration(registry string) docker.AuthConfiguration {
-	var auth docker.AuthConfiguration
+	var defaultAuth docker.AuthConfiguration
 	if dockercfg == nil {
-		return auth
+		if auth, err := dockerAuth(registry); err == nil {
+			return auth
+		}
+
+		return defaultAuth
 	}
 
-	auth, _ = dockercfg.Configs[registry]
+	auth, _ := dockercfg.Configs[registry]
 	return auth
 }
