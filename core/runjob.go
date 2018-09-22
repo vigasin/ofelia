@@ -19,7 +19,6 @@ import (
 var dockercfg *docker.AuthConfigurations
 
 func dockerAuth(repository string) (docker.AuthConfiguration, error){
-
 	configPath := path.Join(os.Getenv("HOME"), ".docker", "config.json")
 	configFile, err := os.Open(configPath)
 
@@ -32,8 +31,9 @@ func dockerAuth(repository string) (docker.AuthConfiguration, error){
 	confsWrapper := struct {
 		CredsStore string `json:"credsStore"`
 	}{}
-	if err := json.Unmarshal(byteData, &confsWrapper); err == nil {
-		fmt.Println(confsWrapper.CredsStore)
+	if err := json.Unmarshal(byteData, &confsWrapper); err != nil {
+		log.Println("Can't read credsStore")
+		return docker.AuthConfiguration{}, err
 	}
 
 	command := fmt.Sprintf("docker-credential-%s", confsWrapper.CredsStore)
@@ -60,8 +60,9 @@ func dockerAuth(repository string) (docker.AuthConfiguration, error){
 		Secret string
 	}{}
 
-	if err := json.Unmarshal(out, &authWrapper); err == nil {
-		fmt.Println(authWrapper.Username)
+	if err := json.Unmarshal(out, &authWrapper); err != nil {
+		log.Println("Can't read auth")
+		return docker.AuthConfiguration{}, err
 	}
 
 	result := docker.AuthConfiguration{
