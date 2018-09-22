@@ -66,7 +66,7 @@ func dockerAuth(repository string) (docker.AuthConfiguration, error){
 	}
 
 	result := docker.AuthConfiguration{
-		ServerAddress:authWrapper.ServerURL,
+		ServerAddress:fmt.Sprintf("https://%s", authWrapper.ServerURL),
 		Username:authWrapper.Username,
 		Password:authWrapper.Secret,
 		Email:"no@email.no",

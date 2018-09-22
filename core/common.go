@@ -243,9 +243,6 @@ func buildAuthConfiguration(registry string) docker.AuthConfiguration {
 	var defaultAuth docker.AuthConfiguration
 	if dockercfg == nil {
 		if auth, err := dockerAuth(registry); err == nil {
-			fmt.Println(auth.ServerAddress)
-			fmt.Println(auth.Username)
-			fmt.Println(auth.Password)
 			return auth
 		}
 
