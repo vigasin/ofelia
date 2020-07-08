@@ -16,17 +16,17 @@ jobs:
     - name: Build image
       uses: mr-smithers-excellent/docker-build-push@v2
       with:
-        image: mcuadros/ofelia
+        image: vigasin/ofelia
         registry: docker.io
-        username: mcuadros
+        username: vigasin
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Tag image
       if: github.event_name == 'release'
       uses: mr-smithers-excellent/docker-build-push@v2
       with:
-        image: mcuadros/ofelia
+        image: vigasin/ofelia
         registry: docker.io
         tag: latest
-        username: mcuadros
+        username: vigasin
         password: ${{ secrets.DOCKER_PASSWORD }}

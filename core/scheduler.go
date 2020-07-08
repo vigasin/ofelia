@@ -40,10 +40,6 @@ func (s *Scheduler) AddJob(j Job) error {
 
 	wrapper := &jobWrapper{s, j}
 
-	if j.GetRunOnStart() {
-		wrapper.Run()
-	}
-
 	err := s.cron.AddJob(j.GetSchedule(), wrapper)
 	if err != nil {
 		return err
@@ -63,6 +59,13 @@ func (s *Scheduler) Start() error {
 	s.mergeMiddlewares()
 	s.isRunning = true
 	s.cron.Start()
+
+	for _, job := range s.Jobs {
+		if job.GetRunOnStart() {
+			wrapper := &jobWrapper{s, job}
+			wrapper.Run()
+		}
+	}
 	return nil
 }
 
@@ -121,6 +124,15 @@ func (w *jobWrapper) stop(ctx *Context, err error) {
 
 	if len(output) > 0 {
 		ctx.Log("Output: " + string(output))
+	}
+
+	stderr, err := ioutil.ReadAll(ctx.Execution.ErrorStream)
+	if err != nil {
+		ctx.Logger.Errorf("Couldn't read command stderr")
+	}
+
+	if len(stderr) > 0 {
+		ctx.Log("Stderr: " + string(stderr))
 	}
 
 	msg := fmt.Sprintf(

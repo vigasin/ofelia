@@ -3,8 +3,8 @@ package cli
 import (
 	"testing"
 
-	"github.com/mcuadros/ofelia/core"
-	"github.com/mcuadros/ofelia/middlewares"
+	"github.com/vigasin/ofelia/core"
+	"github.com/vigasin/ofelia/middlewares"
 	. "gopkg.in/check.v1"
 )
 

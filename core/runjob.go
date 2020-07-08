@@ -185,6 +185,10 @@ func (j *RunJob) buildContainer() (*docker.Container, error) {
 	var mounts []docker.HostMount
 
 	for _, volume := range volumeList {
+		if volume == "" {
+			continue
+		}
+
 		volumeSplit := strings.Split(volume, ":")
 
 		mount := docker.HostMount{
@@ -234,7 +238,21 @@ func (j *RunJob) buildContainer() (*docker.Container, error) {
 }
 
 func (j *RunJob) startContainer(e *Execution, c *docker.Container) error {
-	return j.Client.StartContainer(c.ID, &docker.HostConfig{})
+	err := j.Client.StartContainer(c.ID, &docker.HostConfig{})
+	if err != nil {
+		return err
+	}
+
+	_, err = j.Client.AttachToContainerNonBlocking(docker.AttachToContainerOptions{
+		Container: c.ID,
+		Logs: true,
+		Stdout: true,
+		Stderr: true,
+		OutputStream: e.OutputStream,
+		ErrorStream: e.ErrorStream,
+	})
+
+	return err
 }
 
 func (j *RunJob) getContainer(id string) (*docker.Container, error) {
