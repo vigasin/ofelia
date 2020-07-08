@@ -40,7 +40,7 @@ func (s *Scheduler) AddJob(j Job) error {
 
 	wrapper := &jobWrapper{s, j}
 
-	err := s.cron.AddJob(j.GetSchedule(), wrapper)
+	_, err := s.cron.AddJob(j.GetSchedule(), wrapper)
 	if err != nil {
 		return err
 	}
