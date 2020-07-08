@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/vigasin/ofelia/cli"
-
 	"github.com/jessevdk/go-flags"
+	"github.com/vigasin/ofelia/cli"
 )
 
 var version string

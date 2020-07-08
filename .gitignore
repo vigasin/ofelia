@@ -3,3 +3,5 @@ ofelia
 debug
 build
 .idea
+bin
+*coverage*

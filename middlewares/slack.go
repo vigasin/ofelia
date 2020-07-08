@@ -17,8 +17,8 @@ var (
 
 // SlackConfig configuration for the Slack middleware
 type SlackConfig struct {
-	SlackWebhook     string `gcfg:"slack-webhook"`
-	SlackOnlyOnError bool   `gcfg:"slack-only-on-error"`
+	SlackWebhook     string `gcfg:"slack-webhook" mapstructure:"slack-webhook"`
+	SlackOnlyOnError bool   `gcfg:"slack-only-on-error" mapstructure:"slack-only-on-error"`
 }
 
 // NewSlack returns a Slack middleware if the given configuration is not empty
@@ -74,7 +74,7 @@ func (m *Slack) buildMessage(ctx *core.Context) *slackMessage {
 	}
 
 	msg.Text = fmt.Sprintf(
-		"Job *%s* finished in *%s*, command _%q_",
+		"Job *%q* finished in *%s*, command `%s`",
 		ctx.Job.GetName(), ctx.Execution.Duration, ctx.Job.GetCommand(),
 	)
 
