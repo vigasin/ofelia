@@ -1,9 +1,11 @@
 package cli
 
 import (
+	docker "github.com/fsouza/go-dockerclient"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/vigasin/ofelia/core"
 )
@@ -17,6 +19,7 @@ type DaemonCommand struct {
 	scheduler *core.Scheduler
 	signals   chan os.Signal
 	done      chan bool
+	events    chan *docker.APIEvents
 }
 
 // Execute runs the daemon
@@ -24,16 +27,32 @@ func (c *DaemonCommand) Execute(args []string) error {
 	_, err := os.Stat("/.dockerenv")
 	IsDockerEnv = !os.IsNotExist(err)
 
-	if err := c.boot(); err != nil {
-		return err
-	}
+	exit := false
 
-	if err := c.start(); err != nil {
-		return err
-	}
+	for {
+		err = c.setWaiter()
+		if err != nil {
+			return err
+		}
 
-	if err := c.shutdown(); err != nil {
-		return err
+		if err := c.boot(); err != nil {
+			return err
+		}
+
+		if err := c.start(); err != nil {
+			return err
+		}
+
+		exit, err = c.shutdown()
+		if err != nil {
+			return err
+		}
+
+		if exit {
+			break
+		} else {
+			time.Sleep(1 * time.Second)
+		}
 	}
 
 	return nil
@@ -51,6 +70,7 @@ func (c *DaemonCommand) boot() (err error) {
 
 func (c *DaemonCommand) start() error {
 	c.setSignals()
+
 	if err := c.scheduler.Start(); err != nil {
 		return err
 	}
@@ -74,12 +94,56 @@ func (c *DaemonCommand) setSignals() {
 	}()
 }
 
-func (c *DaemonCommand) shutdown() error {
-	<-c.done
+func (c *DaemonCommand) setWaiter() error {
+	c.events = make(chan *docker.APIEvents, 10)
+
+	d, err := docker.NewClientFromEnv()
+	if err != nil {
+		return err
+	}
+
+	return d.AddEventListener(c.events)
+}
+
+func (c *DaemonCommand) unsetWaiter() error {
+	d, err := docker.NewClientFromEnv()
+	if err != nil {
+		return err
+	}
+
+	return d.RemoveEventListener(c.events)
+}
+
+func (c *DaemonCommand) shutdown() (bool, error) {
+	var needExit bool
+	var needBreak bool
+
+	for {
+		select {
+		case <-c.done:
+			needExit = true
+			needBreak = true
+		case event := <-c.events:
+			needExit = false
+
+			if event.Type == "container" && (event.Action == "die" || event.Action == "start") {
+				// We'll reset it soon
+				c.unsetWaiter()
+				needBreak = true
+			} else {
+				needBreak = false
+			}
+		}
+
+		if needBreak {
+			break
+		}
+	}
+
 	if !c.scheduler.IsRunning() {
-		return nil
+		return needExit, nil
 	}
 
 	c.scheduler.Logger.Warningf("Waiting running jobs.")
-	return c.scheduler.Stop()
+	return needExit, c.scheduler.Stop()
 }

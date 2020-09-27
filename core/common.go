@@ -24,6 +24,7 @@ var (
 
 type Job interface {
 	GetName() string
+	GetLabel() string
 	GetSchedule() string
 	GetRunOnStart() bool
 	GetCommand() string
@@ -113,8 +114,8 @@ func (c *Context) Stop(err error) {
 }
 
 func (c *Context) Log(msg string) {
-	format := "[Job %q (%s)] %s"
-	args := []interface{}{c.Job.GetName(), c.Execution.ID, msg}
+	format := "[Job %q (%s %s)] %s"
+	args := []interface{}{c.Job.GetName(), c.Job.GetLabel(), c.Execution.ID, msg}
 
 	switch {
 	case c.Execution.Failed:

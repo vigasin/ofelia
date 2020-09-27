@@ -50,10 +50,6 @@ func (s *Scheduler) AddJob(j Job) error {
 }
 
 func (s *Scheduler) Start() error {
-	if len(s.Jobs) == 0 {
-		return ErrEmptyScheduler
-	}
-
 	s.Logger.Debugf("Starting scheduler with %d jobs", len(s.Jobs))
 
 	s.mergeMiddlewares()

@@ -157,6 +157,14 @@ type ExecJobConfig struct {
 	middlewares.MailConfig    `mapstructure:",squash"`
 }
 
+func (c *ExecJobConfig) GetName() string {
+	return c.Name
+}
+
+func (c *ExecJobConfig) GetLabel() string {
+	return c.Container
+}
+
 func (c *ExecJobConfig) buildMiddlewares() {
 	c.ExecJob.Use(middlewares.NewOverlap(&c.OverlapConfig))
 	c.ExecJob.Use(middlewares.NewSlack(&c.SlackConfig))
@@ -173,12 +181,20 @@ type RunServiceConfig struct {
 	middlewares.MailConfig    `mapstructure:",squash"`
 }
 
+func (c *RunServiceConfig) GetLabel() string {
+	return ""
+}
+
 type RunJobConfig struct {
 	core.RunJob               `mapstructure:",squash"`
 	middlewares.OverlapConfig `mapstructure:",squash"`
 	middlewares.SlackConfig   `mapstructure:",squash"`
 	middlewares.SaveConfig    `mapstructure:",squash"`
 	middlewares.MailConfig    `mapstructure:",squash"`
+}
+
+func (c *RunJobConfig) GetLabel() string {
+	return c.Container
 }
 
 func (c *RunJobConfig) buildMiddlewares() {
@@ -195,6 +211,10 @@ type LocalJobConfig struct {
 	middlewares.SlackConfig   `mapstructure:",squash"`
 	middlewares.SaveConfig    `mapstructure:",squash"`
 	middlewares.MailConfig    `mapstructure:",squash"`
+}
+
+func (c *LocalJobConfig) GetLabel() string {
+	return ""
 }
 
 func (c *LocalJobConfig) buildMiddlewares() {

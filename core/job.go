@@ -8,6 +8,7 @@ import (
 type BareJob struct {
 	Schedule string
 	Name     string
+	Label    string
 	Command  string
 	RunOnStart bool
 
