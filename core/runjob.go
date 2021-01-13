@@ -4,21 +4,21 @@ import (
 	"fmt"
 	"time"
 
+	"encoding/json"
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/gobs/args"
-	"strings"
-	"os"
-	"path"
-		"io/ioutil"
-	"encoding/json"
-	"os/exec"
-	"log"
 	"io"
+	"io/ioutil"
+	"log"
+	"os"
+	"os/exec"
+	"path"
+	"strings"
 )
 
 var dockercfg *docker.AuthConfigurations
 
-func dockerAuth(repository string) (docker.AuthConfiguration, error){
+func dockerAuth(repository string) (docker.AuthConfiguration, error) {
 	configPath := path.Join(os.Getenv("HOME"), ".docker", "config.json")
 	configFile, err := os.Open(configPath)
 
@@ -56,8 +56,8 @@ func dockerAuth(repository string) (docker.AuthConfiguration, error){
 
 	authWrapper := struct {
 		ServerURL string
-		Username string
-		Secret string
+		Username  string
+		Secret    string
 	}{}
 
 	if err := json.Unmarshal(out, &authWrapper); err != nil {
@@ -66,10 +66,10 @@ func dockerAuth(repository string) (docker.AuthConfiguration, error){
 	}
 
 	result := docker.AuthConfiguration{
-		ServerAddress:fmt.Sprintf("https://%s", authWrapper.ServerURL),
-		Username:authWrapper.Username,
-		Password:authWrapper.Secret,
-		Email:"no@email.no",
+		ServerAddress: fmt.Sprintf("https://%s", authWrapper.ServerURL),
+		Username:      authWrapper.Username,
+		Password:      authWrapper.Secret,
+		Email:         "no@email.no",
 	}
 
 	return result, nil
@@ -80,16 +80,17 @@ func init() {
 }
 
 type RunJob struct {
-	BareJob   `mapstructure:",squash"`
-	Client    *docker.Client `json:"-"`
-	User      string         `default:"root"`
-	TTY       bool           `default:"false"`
-	Delete    bool           `default:"true"`
-	Pull      bool           `default:"true"`
-	Image     string
-	Network   string
-	Container string
-	Volumes   string
+	BareJob     `mapstructure:",squash"`
+	Client      *docker.Client `json:"-"`
+	User        string         `default:"root"`
+	TTY         bool           `default:"false"`
+	Delete      bool           `default:"true"`
+	Pull        bool           `default:"true"`
+	Image       string
+	Network     string
+	Container   string
+	Volumes     string
+	Environment string         `default:""`
 }
 
 func NewRunJob(c *docker.Client) *RunJob {
@@ -192,12 +193,14 @@ func (j *RunJob) buildContainer() (*docker.Container, error) {
 		volumeSplit := strings.Split(volume, ":")
 
 		mount := docker.HostMount{
-			Type: "bind",
+			Type:   "bind",
 			Source: volumeSplit[0],
-			Target:volumeSplit[1],
+			Target: volumeSplit[1],
 		}
 		mounts = append(mounts, mount)
 	}
+
+	environmentList := strings.Split(j.Environment, ";")
 
 	c, err := j.Client.CreateContainer(docker.CreateContainerOptions{
 		Config: &docker.Config{
@@ -208,9 +211,10 @@ func (j *RunJob) buildContainer() (*docker.Container, error) {
 			Tty:          j.TTY,
 			Cmd:          args.GetArgs(j.Command),
 			User:         j.User,
+			Env:          environmentList,
 		},
 		NetworkingConfig: &docker.NetworkingConfig{},
-		HostConfig:&docker.HostConfig{
+		HostConfig: &docker.HostConfig{
 			Mounts: mounts,
 		},
 	})
@@ -244,12 +248,12 @@ func (j *RunJob) startContainer(e *Execution, c *docker.Container) error {
 	}
 
 	_, err = j.Client.AttachToContainerNonBlocking(docker.AttachToContainerOptions{
-		Container: c.ID,
-		Logs: true,
-		Stdout: true,
-		Stderr: true,
+		Container:    c.ID,
+		Logs:         true,
+		Stdout:       true,
+		Stderr:       true,
 		OutputStream: e.OutputStream,
-		ErrorStream: e.ErrorStream,
+		ErrorStream:  e.ErrorStream,
 	})
 
 	return err
