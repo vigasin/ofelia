@@ -48,7 +48,7 @@ func (s *Scheduler) AddJob(j Job) error {
 	return nil
 }
 
-func (s *Scheduler) Start(firstTime bool) error {
+func (s *Scheduler) Start() error {
 	s.Logger.Debugf("Starting scheduler with %d jobs", len(s.Jobs))
 
 	s.mergeMiddlewares()
@@ -56,7 +56,7 @@ func (s *Scheduler) Start(firstTime bool) error {
 	s.cron.Start()
 
 	for _, job := range s.Jobs {
-		if job.GetRunOnStart() && firstTime {
+		if job.GetRunOnStart() {
 			wrapper := &jobWrapper{s, job}
 			wrapper.Run()
 		}

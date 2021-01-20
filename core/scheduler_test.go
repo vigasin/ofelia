@@ -32,7 +32,7 @@ func (s *SuiteScheduler) TestStartStop(c *C) {
 	err := sc.AddJob(job)
 	c.Assert(err, IsNil)
 
-	sc.Start()
+	sc.Start(true)
 	c.Assert(sc.IsRunning(), Equals, true)
 
 	time.Sleep(time.Second * 2)

@@ -302,6 +302,10 @@ type TestJob struct {
 	Called int
 }
 
+func (j *TestJob) GetLabel() string {
+	panic("implement me")
+}
+
 func (j *TestJob) Run(ctx *Context) error {
 	j.Called++
 	time.Sleep(time.Millisecond * 500)
