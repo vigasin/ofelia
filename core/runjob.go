@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"encoding/json"
@@ -80,15 +81,23 @@ func init() {
 }
 
 type RunJob struct {
-	BareJob     `mapstructure:",squash"`
-	Client      *docker.Client `json:"-"`
-	User        string         `default:"root"`
-	TTY         bool           `default:"false"`
-	Delete      bool           `default:"true"`
-	Pull        bool           `default:"true"`
-	Image       string
-	Network     string
-	Container   string
+	BareJob `mapstructure:",squash"`
+	Client  *docker.Client `json:"-"`
+	User    string         `default:"root"`
+
+	TTY bool `default:"false"`
+
+	// do not use bool values with "default:true" because if
+	// user would set it to "false" explicitly, it still will be
+	// changed to "true" https://github.com/mcuadros/ofelia/issues/135
+	// so lets use strings here as workaround
+	Delete string `default:"true"`
+	Pull   string `default:"true"`
+
+	Image     string
+	Network   string
+	Container string
+	Volume    []string
 	Volumes     string
 	Environment string         `default:""`
 }
@@ -100,35 +109,46 @@ func NewRunJob(c *docker.Client) *RunJob {
 func (j *RunJob) Run(ctx *Context) error {
 	var container *docker.Container
 	var err error
+	pull, _ := strconv.ParseBool(j.Pull)
+
 	if j.Image != "" && j.Container == "" {
 		if err = func() error {
-			var err error
+			var pullError error
 
 			// if Pull option "true"
 			// try pulling image first
-			if j.Pull {
-				if err = j.pullImage(); err == nil {
+			if pull {
+				if pullError = j.pullImage(); pullError == nil {
 					ctx.Log("Pulled image " + j.Image)
 					return nil
 				}
 			}
 
 			// if Pull option "false"
-			// try to find image locally
-			if err = j.searchLocalImage(); err == nil {
+			// try to find image locally first
+			searchErr := j.searchLocalImage()
+			if searchErr == nil {
 				ctx.Log("Found locally image " + j.Image)
 				return nil
 			}
 
-			if !j.Pull && err == ErrLocalImageNotFound {
-				// if couldn't find locally, try to pull
-				if err = j.pullImage(); err == nil {
+			// if couldn't find image locally, still try to pull
+			if !pull && searchErr == ErrLocalImageNotFound {
+				if pullError = j.pullImage(); pullError == nil {
 					ctx.Log("Pulled image " + j.Image)
 					return nil
 				}
 			}
 
-			return err
+			if pullError != nil {
+				return pullError
+			}
+
+			if searchErr != nil {
+				return searchErr
+			}
+
+			return nil
 		}(); err != nil {
 			return err
 		}
@@ -144,11 +164,24 @@ func (j *RunJob) Run(ctx *Context) error {
 		}
 	}
 
+	startTime := time.Now()
 	if err := j.startContainer(ctx.Execution, container); err != nil {
 		return err
 	}
 
 	if err := j.watchContainer(container.ID); err != nil {
+		return err
+	}
+
+	if err := j.Client.Logs(docker.LogsOptions{
+		Container:    container.ID,
+		OutputStream: ctx.Execution.OutputStream,
+		ErrorStream:  ctx.Execution.ErrorStream,
+		Stdout:       true,
+		Stderr:       true,
+		Since:        startTime.Unix(),
+		RawTerminal:  true,
+	}); err != nil {
 		return err
 	}
 
@@ -216,6 +249,7 @@ func (j *RunJob) buildContainer() (*docker.Container, error) {
 		NetworkingConfig: &docker.NetworkingConfig{},
 		HostConfig: &docker.HostConfig{
 			Mounts: mounts,
+			Binds: j.Volume,
 		},
 	})
 
@@ -305,7 +339,7 @@ func (j *RunJob) watchContainer(containerID string) error {
 }
 
 func (j *RunJob) deleteContainer(containerID string) error {
-	if !j.Delete {
+	if delete, _ := strconv.ParseBool(j.Delete); !delete {
 		return nil
 	}
 

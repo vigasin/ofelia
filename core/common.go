@@ -1,11 +1,10 @@
 package core
 
 import (
-	"bytes"
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"io"
+	"github.com/armon/circbuf"
 	"reflect"
 	"strings"
 	"time"
@@ -22,6 +21,9 @@ var (
 	ErrLocalImageNotFound = errors.New("couldn't find image on the host")
 )
 
+// maximum size of a stdout/stderr stream to be kept in memory and optional stored/sent via mail
+const maxStreamSize = 10 * 1024 * 1024
+
 type Job interface {
 	GetName() string
 	GetLabel() string
@@ -32,8 +34,6 @@ type Job interface {
 	Use(...Middleware)
 	Run(*Context) error
 	Running() int32
-	History() []*Execution
-	AddHistory(...*Execution)
 	NotifyStart()
 	NotifyStop()
 }
@@ -61,7 +61,6 @@ func NewContext(s *Scheduler, j Job, e *Execution) *Context {
 
 func (c *Context) Start() {
 	c.Execution.Start()
-	c.Job.AddHistory(c.Execution)
 	c.Job.NotifyStart()
 }
 
@@ -137,15 +136,17 @@ type Execution struct {
 	Skipped   bool
 	Error     error
 
-	OutputStream, ErrorStream io.ReadWriter `json:"-"`
+	OutputStream, ErrorStream *circbuf.Buffer `json:"-"`
 }
 
 // NewExecution returns a new Execution, with a random ID
 func NewExecution() *Execution {
+	bufOut, _ := circbuf.NewBuffer(maxStreamSize)
+	bufErr, _ := circbuf.NewBuffer(maxStreamSize)
 	return &Execution{
 		ID:           randomID(),
-		OutputStream: bytes.NewBuffer(nil),
-		ErrorStream:  bytes.NewBuffer(nil),
+		OutputStream: bufOut,
+		ErrorStream:  bufErr,
 	}
 }
 
@@ -242,25 +243,32 @@ func buildFindLocalImageOptions(image string) docker.ListImagesOptions {
 }
 
 func buildPullOptions(image string) (docker.PullImageOptions, docker.AuthConfiguration) {
-	tag := "latest"
-	registry := ""
+	repository, tag := docker.ParseRepositoryTag(image)
 
-	parts := strings.Split(image, ":")
-	if len(parts) == 2 {
-		tag = parts[1]
-	}
+	registry := parseRegistry(repository)
 
-	name := parts[0]
-	parts = strings.Split(name, "/")
-	if len(parts) > 2 {
-		registry = parts[0]
+	if tag == "" {
+		tag = "latest"
 	}
 
 	return docker.PullImageOptions{
-		Repository: name,
+		Repository: repository,
 		Registry:   registry,
 		Tag:        tag,
 	}, buildAuthConfiguration(registry)
+}
+
+func parseRegistry(repository string) string {
+	parts := strings.Split(repository, "/")
+	if len(parts) < 2 {
+		return ""
+	}
+
+	if strings.ContainsAny(parts[0], ".:") || len(parts) > 2 {
+		return parts[0]
+	}
+
+	return ""
 }
 
 func buildAuthConfiguration(registry string) docker.AuthConfiguration {
@@ -273,6 +281,20 @@ func buildAuthConfiguration(registry string) docker.AuthConfiguration {
 		return defaultAuth
 	}
 
-	auth, _ := dockercfg.Configs[registry]
+	if v, ok := dockercfg.Configs[registry]; ok {
+		return v
+	}
+
+	// try to fetch configs from docker hub default registry urls
+	// see example here: https://www.projectatomic.io/blog/2016/03/docker-credentials-store/
+	if registry == "" {
+		if v, ok := dockercfg.Configs["https://index.docker.io/v2/"]; ok {
+			return v
+		}
+		if v, ok := dockercfg.Configs["https://index.docker.io/v1/"]; ok {
+			return v
+		}
+	}
+
 	return auth
 }
