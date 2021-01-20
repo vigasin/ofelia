@@ -272,13 +272,9 @@ func parseRegistry(repository string) string {
 }
 
 func buildAuthConfiguration(registry string) docker.AuthConfiguration {
-	var defaultAuth docker.AuthConfiguration
+	var auth docker.AuthConfiguration
 	if dockercfg == nil {
-		if auth, err := dockerAuth(registry); err == nil {
-			return auth
-		}
-
-		return defaultAuth
+		return auth
 	}
 
 	if v, ok := dockercfg.Configs[registry]; ok {
