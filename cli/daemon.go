@@ -27,6 +27,7 @@ func (c *DaemonCommand) Execute(args []string) error {
 	_, err := os.Stat("/.dockerenv")
 	IsDockerEnv = !os.IsNotExist(err)
 
+	firstTime := true
 	exit := false
 
 	for {
@@ -39,7 +40,7 @@ func (c *DaemonCommand) Execute(args []string) error {
 			return err
 		}
 
-		if err := c.start(); err != nil {
+		if err := c.start(firstTime); err != nil {
 			return err
 		}
 
@@ -52,6 +53,7 @@ func (c *DaemonCommand) Execute(args []string) error {
 			break
 		} else {
 			time.Sleep(1 * time.Second)
+			firstTime = false
 		}
 	}
 
@@ -68,10 +70,10 @@ func (c *DaemonCommand) boot() (err error) {
 	return
 }
 
-func (c *DaemonCommand) start() error {
+func (c *DaemonCommand) start(firstTime bool) error {
 	c.setSignals()
 
-	if err := c.scheduler.Start(); err != nil {
+	if err := c.scheduler.Start(firstTime); err != nil {
 		return err
 	}
 
