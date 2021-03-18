@@ -272,25 +272,6 @@ func parseRegistry(repository string) string {
 }
 
 func buildAuthConfiguration(registry string) docker.AuthConfiguration {
-	var auth docker.AuthConfiguration
-	if dockercfg == nil {
-		return auth
-	}
-
-	if v, ok := dockercfg.Configs[registry]; ok {
-		return v
-	}
-
-	// try to fetch configs from docker hub default registry urls
-	// see example here: https://www.projectatomic.io/blog/2016/03/docker-credentials-store/
-	if registry == "" {
-		if v, ok := dockercfg.Configs["https://index.docker.io/v2/"]; ok {
-			return v
-		}
-		if v, ok := dockercfg.Configs["https://index.docker.io/v1/"]; ok {
-			return v
-		}
-	}
-
-	return auth
+	authConfiguration, _ := docker.NewAuthConfigurationsFromCredsHelpers(registry)
+	return *authConfiguration
 }
