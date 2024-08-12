@@ -233,7 +233,12 @@ func (j *RunJob) buildContainer() (*docker.Container, error) {
 		mounts = append(mounts, mount)
 	}
 
-	environmentList := strings.Split(j.Environment, ";")
+	var environmentList []string
+	if j.Environment == "" {
+		environmentList = []string{}
+	} else {
+		environmentList = strings.Split(j.Environment, ";")
+	}
 
 	c, err := j.Client.CreateContainer(docker.CreateContainerOptions{
 		Config: &docker.Config{
